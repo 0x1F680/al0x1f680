@@ -1,0 +1,19 @@
+#!/bin/bash
+
+
+log "Insert key"
+
+log "Setting up..."
+pacman -Sy &&
+pacman -S libfido2 &&
+eval $(ssh-agent -s) &&
+ssh-add -K
+log "SSH key is set up!"
+
+log "Pulling installer"
+cd ~/ &&
+git clone git@github.com/0x1F680/FAISAL.git
+
+log "Starting installer script"
+cd ~/FAISAL &&
+./deploy
