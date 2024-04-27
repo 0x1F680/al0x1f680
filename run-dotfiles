@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# error fn
+fail() {
+	local color_fatal=$'\033[0;31m'
+	log "$@ Failed!"
+	log "Error!"
+	log "Exiting."
+	exit 1
+}
+
+ask_logic() {
+    while true
+    do
+        read -r -p "$1 [Yes/No]" input
+    
+		case $input in
+		    [yY][eE][sS]|[yY])
+				echo "1"
+                break
+				;;
+		    [nN][oO]|[nN])
+                break
+				;;
+		    *)
+			echo "Invalid input..."
+            echo "Try again"
+			;;
+		esac
+    done
+}
+
+
+if [[ $(ask_logic "Do you want to delete current home directory?") -eq 1 ]]
+then
+    rm -rf $HOME/* &&
+    rm -rf $HOME/.* || fail "Removing curent home directory"
+elif [[ $(ask_logic "Do you want to manually delete home directory?") -eq 1 ]]
+then
+    echo "Delete what you want"
+    echo "Run script again when you are done!"
+    exit 0
+fi
+
+echo "Starting dotfiles migration"
+
+
+while true
+do
+    if [[ $(ask_logic "Is ssh key connected?") -eq 1 ]]
+    then
+        break
+    else
+        echo "Connect ssh key!!!!"
+        echo ""
+    fi
+done
+
+eval $(ssh-agent) >/dev/null
+ssh-add -K
+rm -rf $HOME/git/dotfiles
+git clone --bare git@github.com:0x1f680/df.git $HOME/git/df &&
+function dotfiles {
+   /usr/bin/git --git-dir=$HOME/git/df --work-tree=$HOME $@
+}
+mkdir -p .config/config-backup
+dotfiles checkout &&
+if [ $? = 0 ]; then
+  echo "Checked out dotfiles."
+else
+    echo "Backing up pre-existing dot files."
+    dotfiles checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | xargs -I{} mv {} .config/config-backup/{}
+fi
+dotfiles checkout &&
+dotfiles config status.showUntrackedFiles no || echo "Error, try again!"

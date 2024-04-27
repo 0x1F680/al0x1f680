@@ -1,0 +1,33 @@
+#!/bin/bash
+
+log() {
+	local color_on=$'\e[0;32m'
+	local color_off=$'\e[0m'
+	echo "${color_on}[$(date)]${color_off} $1" >&2
+}
+
+fatal() {
+    local color_fatal=$'\033[0;31m'
+    log "${color_fatal} $1 FAILED!"
+    log "${color_fatal} Error!"
+    log "$Pcolor_fatal} Exiting..."
+    exit 1
+}
+
+log "Insert key"
+
+log "Setting up..."
+pacman -Sy &&
+pacman -S libfido2 &&
+eval $(ssh-agent -s) &&
+log "Importing..." &&
+ssh-add -K || fatal "Error setting up key!! Try again"
+log "SSH key is set up!"
+
+log "Pulling installer"
+cd ~/ &&
+git clone git@github.com:0x1F680/al.git || fatal "Pulling installer"
+
+log "Starting installer script"
+cd ~/FAISAL || fatal "Getting to FAISAL"
+./deploy
